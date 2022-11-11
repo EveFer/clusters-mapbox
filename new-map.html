@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Create and style clusters</title>
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
+    <script src="https://api.mapbox.com/mapbox.js/plugins/turf/v2.0.2/turf.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+
+    <script type="module" src="./js/main.js"></script>
+
+    <!-- <script>
+      mapboxgl.accessToken =
+        "pk.eyJ1IjoiZmVybmFuZGFwYWxhY2lvcyIsImEiOiJja2lxaWQ3N2EwZW5xMnRvOHZ2aXE1MmhwIn0.UxzFICTl8Vs9NcXJW25gJg";
+      const map = new mapboxgl.Map({
+        container: "map",
+        style: "mapbox://styles/fernandapalacios/cks521hxl0zmw17munuy6b3u7",
+        center: [-103.5917, 40.6699],
+        zoom: 3,
+      });
+
+      async function fetchGeoJSON(url) {
+        const response = await fetch(url);
+        const data = await response.json();
+        return data;
+      }
+
+      const colorsMap = {
+        availableBonosInitial: {
+          fillOutlineColor: "#2E8968",
+          fillColor: "#FFFFFF",
+          fillOpacity: 0.5,
+        },
+        availableBonosSelected: {
+          fillOutlineColor: "#2E8968",
+          fillColor: "#A7BF42",
+          fillOpacity: 0.7,
+        },
+        retiredBonos: {
+          fillOutlineColor: "#A7BF42",
+          fillColor: "#222222",
+          fillOpacity: 0.5,
+        },
+        polygon: {
+          lineColor: "#FFFFFF",
+          lineWidth: 3,
+        },
+      };
+
+      function getLineWidth(color) {
+        return {
+          "line-color": color,
+          "line-width": [
+            "interpolate",
+            ["exponential", 2],
+            ["zoom"],
+            11,
+            ["*", ["get", "line_width"], ["^", 2, -6]],
+            14,
+            ["*", ["get", "line_width"], ["^", 2, 8]],
+            15,
+            ["*", ["get", "line_width"], ["^", 2, 10]],
+            16,
+            ["*", ["get", "line_width"], ["^", 2, 16]],
+            17,
+            ["*", ["get", "line_width"], ["^", 2, 16]],
+            18,
+            ["*", ["get", "line_width"], ["^", 2, 16]],
+            19,
+            ["*", ["get", "line_width"], ["^", 3, 20]],
+            20,
+            ["*", ["get", "line_width"], ["^", 3, 20]],
+            21,
+            ["*", ["get", "line_width"], ["^", 3, 22]],
+            22,
+            ["*", ["get", "line_width"], ["^", 3, 22]],
+          ],
+        };
+      }
+
+      const URL_API = "https://api.staging.toroto.avocadoblock.com";
+
+      const requestOptions = {
+        method: "GET",
+        mode: "cors",
+      };
+
+      async function getDataMapByProject(idProject) {
+        let data;
+        let errorMessage;
+        try {
+          const response = await fetch(
+            `${URL_API}/project_geodata?project_id=${idProject}`,
+            requestOptions
+          );
+          if (response.status === 200) {
+            data = await response.json();
+          } else {
+            data = response.status;
+          }
+        } catch (error) {
+          errorMessage = "Error desconocido";
+        }
+
+        if (data) {
+          return data;
+        } else {
+          return errorMessage;
+        }
+      }
+
+      async function getDetailsProject(idProject) {
+        let data;
+        let errorMessage;
+        try {
+          const response = await fetch(
+            `${URL_API}/project_details?project_id=${idProject}`,
+            requestOptions
+          );
+          console.log("response");
+          console.log(response);
+          if (response.status === 200) {
+            data = await response.json();
+          } else {
+            data = response.status;
+          }
+        } catch (error) {
+          errorMessage = "Error desconocido";
+        }
+
+        if (data) {
+          return data;
+        } else {
+          return errorMessage;
+        }
+      }
+
+      function updateLayersTileset(
+        map,
+        urlMapbox,
+        layerTileset,
+        layerTilesetOwner
+      ) {
+        const zoomInMax = 12;
+        const zoomInMin = 12;
+        //   add teselas
+        if (map.getSource("tilesets")) {
+          map.getSource("tilesets").setUrl(urlMapbox);
+        } else {
+          map.addSource("tilesets", {
+            type: "vector",
+            url: urlMapbox,
+          });
+          // map.getSource('tilesets')
+        }
+
+        // START TESELAS
+        // teselas con bonos
+
+        if (map.getLayer("tilesets-data")) {
+          setLayerSource(map, "tilesets-data", "tilesets", layerTileset);
+          setLayerSource(map, "tilesets-data-line", "tilesets", layerTileset);
+        } else {
+          map.addLayer({
+            id: "tilesets-data",
+            type: "fill",
+            source: "tilesets",
+            "source-layer": layerTileset,
+            minzoom: zoomInMin,
+            paint: {
+              "fill-color": colorsMap.availableBonosInitial.fillColor,
+              "fill-opacity": colorsMap.availableBonosInitial.fillOpacity,
+            },
+          });
+          map.addLayer({
+            id: "tilesets-data-line",
+            type: "line",
+            source: "tilesets",
+            "source-layer": layerTileset,
+            minzoom: zoomInMin,
+            paint: getLineWidth(
+              colorsMap.availableBonosInitial.fillOutlineColor
+            ),
+          });
+        }
+
+        // teselas with owner
+        if (map.getLayer("tilesets-owner")) {
+          setLayerSource(map, "tilesets-owner", "tilesets", layerTilesetOwner);
+        } else {
+          map.addLayer({
+            id: "tilesets-owner",
+            type: "fill",
+            source: "tilesets",
+            "source-layer": layerTilesetOwner,
+            minzoom: zoomInMin,
+            paint: {
+              "fill-outline-color": colorsMap.retiredBonos.fillOutlineColor,
+              "fill-color": colorsMap.retiredBonos.fillColor,
+              "fill-opacity": colorsMap.retiredBonos.fillOpacity,
+            },
+          });
+          // map.addLayer({
+          //   id: 'tilesets-owner-line',
+          //   type: 'line',
+          //   source: 'tilesets',
+          //   'source-layer': layerTilesetOwner,
+          //   minzoom: zoomInMin,
+          //   paint: getLineWidth(colorsMap.retiredBonos.fillOutlineColor)
+          // })
+        }
+
+        if (map.getLayer("tilesets-highlighted")) {
+          setLayerSource(map, "tilesets-highlighted", "tilesets", layerTileset);
+          setLayerSource(
+            map,
+            "tilesets-highlighted-line",
+            "tilesets",
+            layerTileset
+          );
+        } else {
+          map.addLayer({
+            id: "tilesets-highlighted",
+            type: "fill",
+            source: "tilesets",
+            "source-layer": layerTileset,
+            minzoom: zoomInMin,
+            paint: {
+              // 'fill-outline-color': colorsMap.availableBonosSelected.fillOutlineColor,
+              "fill-color": colorsMap.availableBonosSelected.fillColor,
+              "fill-opacity": colorsMap.availableBonosSelected.fillOpacity,
+            },
+            filter: ["in", "ID", ""],
+          });
+          map.addLayer({
+            id: "tilesets-highlighted-line",
+            type: "line",
+            source: "tilesets",
+            "source-layer": layerTileset,
+            minzoom: zoomInMin,
+            paint: getLineWidth(
+              colorsMap.availableBonosSelected.fillOutlineColor
+            ),
+          });
+        }
+
+        /** * LAYERS LOAD SECTION ***/
+      }
+
+      function addPolygon(map, polygon, zoom) {
+        const zoomInMax = 12;
+        const zoomInMin = 12;
+
+        // all polygon
+        if (!map.getSource("polygon")) {
+          map.addSource("polygon", {
+            type: "geojson",
+            data: polygon,
+            generateId: true, // This ensures that all features have unique IDs
+          });
+        } else {
+          map.getSource("polygon").setData(polygon);
+        }
+        // Add a new layer to visualize the polygon of project area.
+        map.addLayer({
+          id: "ADP",
+          type: "line",
+          source: "polygon",
+          minzoom: zoom,
+          layout: {},
+          paint: {
+            "line-color": colorsMap.polygon.lineColor,
+            "line-width": colorsMap.polygon.lineWidth,
+          },
+          filter: ["==", "layer", "ADP"],
+        });
+      }
+
+      map.on("load", () => {
+        map.addSource("projects", {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: [
+              {
+                geometry: {
+                  coordinates: [-98.60240715610206, 19.654647210893557],
+                  type: "Point",
+                },
+                properties: {
+                  description:
+                    "El proyecto tiene como objetivo restaurar las funciones y salud del suelo de sistemas agrícolas mediante la implementación de prácticas de agricultura regenerativa. Este enfoque utiliza la conservación del suelo como punto de partida para regenerar y contribuir a la provisión, regulación y soporte de los servicios ecosistémicos, con el objetivo de que esto mejore no solo las dimensiones ambientales, sino también las sociales y económicas derivadas de la producción agrícola sostenible.",
+                  id: 76,
+                  location: "Apan, Hidalgo",
+                  name: "Agricultura Regenerativa Apan",
+                  polygon: "c0/c01a219ba96f3f77170b101a05c615a2f427c17b",
+                  projectID: "apan-pilot",
+                  type: "Agricultura Regenerativa",
+                },
+                type: "Feature",
+              },
+              {
+                type: "Feature",
+                properties: {
+                  description:
+                    "Incrementar los acervos de carbono mediante la protección de las selvas de la región sureste de México, generando incentivos económicos que contribuyan a mantener las actividades productivas sustentables en el ejido N.C.P.E Centauro del Norte. Se pretende desincentivar el cambio de uso de suelo gracias a los ingresos que percibirán las comunidades por concepto de la venta de los bonos de carbono. Estos ingresos también nos permitirán implementar un Plan de Monitoreo y Gestión Territorial en conjunto con los ejidos para asegurar el cumplimiento de las salvaguardas ambientales y sociales a lo largo de la vida del proyecto.",
+                  id: 71,
+                  location: "Munipio Calakmul en el estado de Campeche",
+                  name: "Ejido Centauro del Norte",
+                  polygon: "ae/ae799f1a2485456be7f05fcea21236441e662bc0",
+                  projectID: "1349",
+                  type: "Forestal",
+                },
+                geometry: {
+                  coordinates: [-89.512406, 18.42197],
+                  type: "Point",
+                },
+              },
+              {
+                type: "Feature",
+                properties: {
+                  description:
+                    "Llevar a cabo un protocolo de captura de carbono en el Ejido Km 120 con el objetivo de conservar y restaurar las áreas remanentes de selva en el ejido. Se busca básicamente desincentivar el cambio de uso de suelo gracias a los ingresos que percibirán las comunidades por concepto de la venta de los bonos de carbono. Estos ingresos también nos permitirán implementar un Plan de Monitoreo y Gestión Territorial en conjunto con los ejidos para asegurar el cumplimiento de las salvaguardas ambientales y sociales a lo largo de la vida del proyecto.",
+                  id: 72,
+                  location: "Calakmul, Campeche",
+                  name: "Ejido Kilómetro 120",
+                  polygon: "40/4084a85ec3baecf00c38f10b5e6a49039b9cc3f2",
+                  projectID: "1345",
+                  type: "Forestal",
+                },
+                geometry: {
+                  coordinates: [-89.7134807959973, 18.52174798220683],
+                  type: "Point",
+                },
+              },
+              {
+                type: "Feature",
+                properties: {
+                  description:
+                    "La superficie del ejido es de 4 984 hectáreas (RAN, 2015). Cuenta con un área extensa de uso común (1 300 ha aproximadamente) de selva continua en buen estado de conservación que, apenas hace unos años, fue dividida internamente. Esta superficie es de suma importancia biológica y, por su extensión, constituye un corredor biológico estratégico. El Pirú también cuenta con nacimientos de aguas sulfurosas de temperatura elevada en los lomeríos fronterizos con el ejido de Boca de Chajul. El cauce del arroyo Manzanares atraviesa una buena parte del ejido.",
+                  id: 73,
+                  location: "Marqués de Comillas, Chiapas",
+                  name: "El Pirú",
+                  polygon: "55/5536e7a998067e9d842712739bbb5f6a3b32935a",
+                  projectID: "1346",
+                  type: "Forestal",
+                },
+                geometry: {
+                  coordinates: [-90.79994460399996, 16.073922256000056],
+                  type: "Point",
+                },
+              },
+              {
+                type: "Feature",
+                properties: {
+                  description:
+                    "El proyecto tiene como objetivo proteger y restaurar las áreas remanentes de bosque mesófilo de montaña de tal manera que el bosque sea respetado como acervo de carbono y no haya conversión de uso de suelo a plantación cafetalera y / o agricultura. Además, busca conservar el ecosistema, hábitat natural de múltiples especies de fauna y cientos de especies de flora y arbóreas específicas de esta región",
+                  id: 74,
+                  location: "Soconusco, Chiapas",
+                  name: "Finca Guadalupe",
+                  polygon: "73/7386ce994b7d7300a858acf29aaa645c4dcb6742",
+                  projectID: "1478",
+                  type: "Forestal",
+                },
+                geometry: {
+                  coordinates: [-92.26456868360516, 15.158493818215312],
+                  type: "Point",
+                },
+              },
+            ],
+          },
+          cluster: true,
+          clusterMaxZoom: 12, // Max zoom to cluster points on
+          clusterRadius: 50, // Radius of each cluster when clustering points (defaults to 50)
+        });
+
+        map.addLayer({
+          id: "clusters",
+          type: "circle",
+          source: "projects",
+          filter: ["has", "point_count"],
+          layout: {
+            // Make the layer visible by default.
+            visibility: "visible",
+          },
+          paint: {
+            // Use step expressions (https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-step)
+            // with three steps to implement three types of circles:
+            //   * Blue, 20px circles when point count is less than 100
+            //   * Yellow, 30px circles when point count is between 100 and 750
+            //   * Pink, 40px circles when point count is greater than or equal to 750
+            "circle-color": [
+              "step",
+              ["get", "point_count"],
+              "#0055B8",
+              100,
+              "#0055B8",
+              750,
+              "#0055B8",
+            ],
+            "circle-radius": [
+              "step",
+              ["get", "point_count"],
+              20,
+              100,
+              30,
+              750,
+              40,
+            ],
+            "circle-stroke-width": 3,
+            "circle-stroke-color": "#fff",
+          },
+        });
+
+        map.addLayer({
+          id: "cluster-count",
+          type: "symbol",
+          source: "projects",
+          filter: ["has", "point_count"],
+          layout: {
+            "text-field": "+",
+            "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
+            "text-size": 30,
+          },
+          paint: {
+            "text-color": "#fff",
+            "text-halo-color": "#fff",
+            // 'text-halo-width': 1
+          },
+        });
+
+        map.addLayer({
+          id: "unclustered-point",
+          type: "circle",
+          source: "projects",
+          filter: ["!", ["has", "point_count"]],
+          paint: {
+            "circle-color": "#0055B8",
+            "circle-radius": 12,
+            "circle-stroke-width": 3,
+            "circle-stroke-color": "#fff",
+          },
+        });
+
+        // inspect a cluster on click
+        map.on("click", "clusters", (e) => {
+          const features = map.queryRenderedFeatures(e.point, {
+            layers: ["clusters"],
+          });
+          const clusterId = features[0].properties.cluster_id;
+          map
+            .getSource("projects")
+            .getClusterExpansionZoom(clusterId, (err, zoom) => {
+              if (err) return;
+              map.flyTo({
+                center: features[0].geometry.coordinates,
+                zoom: zoom,
+              });
+            });
+        });
+
+        // When a click event occurs on a feature in
+        // the unclustered-point layer, open a popup at
+        // the location of the feature, with
+        // description HTML from its properties.
+        map.on("click", "unclustered-point", async (e) => {
+          const coordinates = e.features[0].geometry.coordinates.slice();
+          console.log(coordinates);
+          const projectID = e.features[0].properties.projectID;
+          console.log(projectID);
+
+          const getProjectData = async () => {
+            let APIerrors;
+
+            // await createTilesetByProject(projectID)
+            let teselas_by_year;
+            getDataMapByProject(projectID)
+              .then(async (dataMap) => {
+                // actualizar la capa setteada
+                updateLayersTileset(
+                  map,
+                  dataMap.teselas_by_year[0].url_mapbox,
+                  dataMap.teselas_by_year[0].layer,
+                  dataMap.teselas_by_year[0].layer_owner
+                );
+                teselas_by_year = dataMap.teselas_by_year;
+                // setProject({ ...project, teselas_by_year })
+                addPolygon(map, dataMap.polygon, map.getZoom());
+                // addLayerCarbono(map, dataMap.layer_carbono)
+                // addLayerUsd(map, dataMap.layer_usd)
+                // addPointsMonotoring(map, dataMap.monitoring_Sites)
+
+                const geojson = await fetchGeoJSON(dataMap.polygon);
+                const bbox = turf.extent(geojson);
+                map.fitBounds(bbox, {
+                  padding: { top: 10, bottom: 50, left: 15, right: 5 },
+                });
+
+                // obtener teselas disponibles
+                setTimeout(() => {
+                  const layerBonos = dataMap.teselas_by_year[0].layer;
+                  const separateIds = dataMap.teselas_by_year[0].separate_ids;
+                  const selectedFeatures = map.querySourceFeatures("tilesets", {
+                    sourceLayer: layerBonos,
+                  });
+                  const bonosId = selectedFeatures.map(
+                    (feature) => feature.properties.ID
+                  );
+                  // setTeselasIds(
+                  //   Array.from(new Set(orderTeselas(separateIds, bonosId)))
+                  // )
+                  // setTeselasAviablesIds(
+                  //   Array.from(new Set(orderTeselas(separateIds, bonosId)))
+                  // )
+                }, 5000);
+              })
+              .catch((error) => {
+                console.log("Error:", error);
+                APIerrors = "Error desconocido";
+              });
+
+            const result = await getDetailsProject(projectID);
+
+            if (typeof result === "number") {
+              if (result === 500) {
+                APIerrors = "Error al conectar con el servidor: 500";
+              } else if (result === 404) {
+                APIerrors = "Error al conectar con el servidor: 404";
+              } else {
+                APIerrors = "Error desconocido";
+              }
+            } else if (typeof result === "object") {
+              // setProject({ ...result[0], teselas_by_year })
+            } else if (typeof result === "string") {
+              APIerrors = "Error desconocido";
+            }
+
+            return APIerrors;
+          };
+          await getProjectData();
+
+          // Ensure that if the map is zoomed out such that
+          // multiple copies of the feature are visible, the
+          // popup appears over the copy being pointed to.
+          while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+            coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+          }
+
+          // new mapboxgl.Popup()
+          //   .setLngLat(coordinates)
+          //   .setHTML(
+          //     `magnitude: ${mag}<br>Was there a tsunami?: ${tsunami}`
+          //   )
+          //   .addTo(map);
+        });
+
+        map.on("mouseenter", "clusters", () => {
+          map.getCanvas().style.cursor = "pointer";
+        });
+        map.on("mouseleave", "clusters", () => {
+          map.getCanvas().style.cursor = "";
+        });
+      });
+    </script> -->
+  </body>
+</html>
